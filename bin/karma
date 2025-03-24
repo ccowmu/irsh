@@ -1,22 +1,3 @@
 #!/usr/bin/env python3
 
-import os
-import sqlite3
-from sys import argv, exit, stderr
-
-self = os.path.basename(__file__)
-
-conn = sqlite3.connect("var/irsh.sqlite3")
-c = conn.cursor()
-
-if len(argv) != 2:
-    print('{}: Invalid commandline'.format(self), file=stderr)
-    exit(1)
-
-try:
-    incs, decs = c.execute('SELECT incs, decs FROM karma WHERE term = ?',
-                           (argv[1],)).fetchone()
-except:
-    incs, decs = 0, 0
-
-print("{} (+{}/-{})".format(incs - decs, incs, decs))
+print("Wrong bot dummy! Try using Rustix by saying !karma")

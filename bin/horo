@@ -16,12 +16,12 @@ if len(sys.argv) != 2:
 sign = sys.argv[1]
 
 try:
-    api = "https://www.astrology.com/us/horoscope/daily-extended.aspx?"
-    params = urllib.parse.urlencode({ 'sign': sign })
-    url = api + params
+    url = f"https://www.astrology.com/horoscope/daily/{sign}.html"
     html = urllib.request.urlopen(url).read()
     soup = BeautifulSoup(html, 'html.parser')
-    sys.stdout.write(soup.find('span', class_='date').next_sibling.strip())
+    horoscope = soup.find(attrs={'id':'content'})
+    sys.stdout.write(horoscope.get_text())
+
 except:
     sys.stderr.write(f"{self}: Could not fetch horoscope for {sign}\n")
     sys.exit(1)

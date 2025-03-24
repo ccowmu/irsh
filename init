@@ -231,7 +231,7 @@ ensure_dir('var')
 ensure_dir('var/root')
 
 config = configparser.ConfigParser()
-config.read('etc/irsh.ini')
+config.read('./etc/irsh.ini')
 config = config['irsh']
 KIND = config['kind']
 LEADER = config['leader']

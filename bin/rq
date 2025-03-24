@@ -1,0 +1,3 @@
+#!/usr/bin/env python3
+
+print("Wrong bot dummy! Try using Rustix by saying !rq")

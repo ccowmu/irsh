@@ -35,7 +35,7 @@ Create a configuration file `etc/irsh.ini`:
 
     # Supply parameters for Matrix ...
     kind = matrix
-    url = localhost
+    url = https://[$HOMESERVER]
     username = irsh
     password = MATRIX_PASSWORD
 
@@ -52,6 +52,16 @@ forced to keep up to date. Please use that, or set up an equivalent environment
 and then run `init` from the root of the repository.
 
 The bot will join any rooms it is invited to.
+
+Deployment
+--------
+
+Use the following commands to build and run the bot:
+
+```docker build -f Dockerfile . -t irsh
+docker run -it -v .:/irsh --name irsh irsh
+```
+
 
 Overview
 --------

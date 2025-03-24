@@ -1,9 +1,10 @@
 #!/usr/bin/fish
 
-if set -q argv[1]
-    set who "$NICK"
+if not set -q argv[1]
+    set input "$NICK"
 else
-    set who "$argv"
+    set input "$argv"
 end
 
-printf "<+%s> it was me lol" $who
+set who (echo "$input" | sed -r 's/^@([a-zA-Z0-9]+):.*/\1/')
+printf "<+%s> it was me lol\n" $who
