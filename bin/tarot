@@ -1,0 +1,47 @@
+#!/usr/bin/fish
+
+set self (basename (status -f))
+
+argparse -n$self f/four t/two -- $argv >/dev/null 2>&1
+
+if not test -f etc/cards
+    printf "%s: No cards available\n" $self >&2
+end
+
+function randcard
+    set card (cat etc/cards | shuf -n1)
+    set roll (random 0 3)
+    set meaning (grep -F "$card" etc/card_meanings)
+    if test -z "$meaning"
+        echo "$card: no description found"
+        return
+    end
+
+    set upright (echo $meaning | cut -f2)
+    set reversed (echo $meaning | cut -f3)
+    if test $roll -eq 0
+        echo "$card (reversed) - $reversed"
+    else
+        echo "$card - $upright"
+    end
+end
+
+if set -q _flag_four
+    set labels "Past" "Present" "Future" "Advice"
+
+    for i in (seq (count $labels))
+        set label $labels[$i]
+        set card (randcard)
+        echo "$label: $card" 
+    end
+else if set -q _flag_two
+    set labels "Daily Draw" "Advice"
+    for i in (seq (count $labels))
+        set label $labels[$i]
+        set card (randcard)
+        echo "$label: $card"
+    end
+else
+    set card (randcard)
+    echo "Daily Draw: $card"
+end
