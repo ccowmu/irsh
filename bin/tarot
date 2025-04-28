@@ -8,8 +8,14 @@ if not test -f etc/cards
     printf "%s: No cards available\n" $self >&2
 end
 
+set shuffled_deck (cat etc/cards | shuf)
+
+set card_index 1
+
 function randcard
-    set card (cat etc/cards | shuf -n1)
+    set -g card $shuffled_deck[$card_index]
+    set -g card_index (math $card_index + 1)
+    
     set roll (random 0 3)
     set meaning (grep -F "$card" etc/card_meanings)
     if test -z "$meaning"
@@ -29,19 +35,17 @@ end
 if set -q _flag_four
     set labels "Past" "Present" "Future" "Advice"
 
-    for i in (seq (count $labels))
-        set label $labels[$i]
-        set card (randcard)
-        echo "$label: $card" 
+    for label in $labels
+        set reading (randcard)
+        echo "$label: $reading"
     end
 else if set -q _flag_two
     set labels "Daily Draw" "Advice"
-    for i in (seq (count $labels))
-        set label $labels[$i]
-        set card (randcard)
-        echo "$label: $card"
+    for label in $labels
+        set reading (randcard)
+        echo "$label: $reading"
     end
 else
-    set card (randcard)
-    echo "Daily Draw: $card"
+    set reading (randcard)
+    echo "Daily Draw: $reading"
 end
