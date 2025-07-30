@@ -97,6 +97,12 @@ is implemented by passing all user-defined paths as an argument to the
 `lib/path` binary, which returns the corrected path. It is the duty of each
 command to ensure that paths are sanitized in this way.
 
+Each room's directory is named using its room id.  The bot will also
+create a symbolic link prefixed with `#` using the room's display name
+when known.  These links are updated if the display name changes.
+Files can therefore be referenced from another room using
+`#ROOMNAME/file` rather than the full room id path.
+
 Commands
 --------
 

@@ -4,6 +4,8 @@ import configparser
 import html
 import logging
 import os
+from pathlib import Path
+
 import path
 import re
 import shlex
@@ -86,6 +88,7 @@ def run(commandline, env):
         if os.path.isfile(bin_path):
             argv[0] = bin_path
         else:
+
             argv.insert(0, 'bin/rand')
 
         try:
@@ -129,6 +132,40 @@ def ensure_dir(d):
     except OSError:
         pass
 
+ROOT_DIR = Path("var/root")        # central place = dir that holds all the links
+
+def ensure_alias(room_id: str, name: str) -> None:
+    """
+    Create or update a symlink in var/root/ that points to the given
+    room's directory, making sure:
+      • only one alias points to that room
+      • the link’s target is *relative* to var/root/ so it works everywhere
+    """
+    if not name:
+        return
+
+    alias   = sanitize_path(name.lstrip("#"))                  # "#geeks" ➜ "geeks"
+    link    = ROOT_DIR / alias                                 # var/root/geeks
+    target  = Path(path.chan_path(room_id, "")).resolve()      # …/var/root/!pYoaw…
+
+    try:
+        # remove any old alias that already points to this room
+        for entry in ROOT_DIR.iterdir():
+            if entry.is_symlink() and entry.resolve() == target and entry != link:
+                entry.unlink()
+
+        # if the alias exists but points elsewhere, remove it
+        if link.is_symlink() and link.resolve() != target:
+            link.unlink()
+
+        # store the target *relative* to var/root/  (../!pYoaw…)
+        rel_target = os.path.relpath(target, ROOT_DIR)
+
+        # create the new symlink (symlink() will raise if it still exists)
+        link.symlink_to(rel_target)
+    except OSError as e:
+        print(f"ensure_alias: could not create {link} -> {rel_target}: {e}")
+
 def handle_message(nick, channel, msg):
     if is_ignored(nick):
         return
@@ -168,6 +205,7 @@ async def room_message_text_callback(room, event):
     if is_ignored(nick):
         return
     channel = room.room_id
+    ensure_alias(channel, getattr(room, 'display_name', None))
     msg = event.body
 
     response = handle_message(nick, channel, msg)
@@ -209,6 +247,12 @@ def run_on_message(**payload):
             channel = data['channel']
             text = html.unescape(data.get('text', []))
             thread_ts = data['ts']
+            try:
+                info = web_client.conversations_info(channel=channel)
+                name = info['channel']['name']
+            except Exception:
+                name = None
+            ensure_alias(channel, name)
             response = handle_message(user, channel, text)
             if response:
                 web_client.chat_postMessage(
