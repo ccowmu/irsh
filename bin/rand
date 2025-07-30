@@ -10,7 +10,7 @@ for path in $argv
         # This is the default command when init doesn't find something in bin/,
         # so we want to just quietly ignore missing files.
         set true_path (lib/path $path)
-        if test -f $true_path
+        if test -e $true_path
             set paths $paths $true_path
         end
     end
