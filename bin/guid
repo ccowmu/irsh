@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+import os
+import sys
+import uuid
+
+self = os.path.basename(sys.argv[0])
+
+if len(sys.argv) != 1:
+    sys.stderr.write(f"{self}: Invalid commandline\n")
+    sys.exit(1)
+
+try:
+    guid = str(uuid.uuid4())
+    sys.stdout.write(guid + "\n")
+except Exception:
+    sys.stderr.write(f"{self}: Could not generate UUID\n")
+    sys.exit(1)
