@@ -1,6 +1,9 @@
-[-t] [-f]
+[-t] [-f] [-r] [-q] [-u]
 
 prints a daily single tarot card reading.
 
     -t prints a 2 card daily and advice reading
     -f prints a 4 card past, present, future, and advice reading
+    -r random: upright/reversed is a true 50/50 instead of the default weighted upright
+    -q quiet: suppress meanings
+    -u unlabelled: suppress labels

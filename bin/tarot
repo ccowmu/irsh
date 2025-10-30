@@ -2,7 +2,7 @@
 
 set self (basename (status -f))
 
-argparse -n$self f/four t/two -- $argv >/dev/null 2>&1
+argparse -n$self f/four t/two r/random q/quiet u/unlabelled -- $argv >/dev/null 2>&1
 
 if not test -f etc/cards
     printf "%s: No cards available\n" $self >&2
@@ -16,7 +16,22 @@ function randcard
     set -g card $shuffled_deck[$card_index]
     set -g card_index (math $card_index + 1)
     
-    set roll (random 0 3)
+    set roll 0
+    if set -q _flag_random
+        set roll (random 0 1)
+    else
+        set roll (random 0 3)
+    end
+
+    if set -q _flag_quiet
+        if test $roll -eq 0
+            echo "$card (reversed)"
+        else
+            echo "$card"
+        end
+        return
+    end
+
     set meaning (grep -F "$card" etc/card_meanings)
     if test -z "$meaning"
         echo "$card: no description found"
@@ -37,15 +52,27 @@ if set -q _flag_four
 
     for label in $labels
         set reading (randcard)
-        echo "$label: $reading"
+        if set -q _flag_unlabelled
+            echo "$reading"
+        else
+            echo "$label: $reading"
+        end
     end
 else if set -q _flag_two
     set labels "Daily Draw" "Advice"
     for label in $labels
         set reading (randcard)
-        echo "$label: $reading"
+        if set -q _flag_unlabelled
+            echo "$reading"
+        else
+            echo "$label: $reading"
+        end
     end
 else
     set reading (randcard)
-    echo "Daily Draw: $reading"
+    if set -q _flag_unlabelled
+        echo "$reading"
+    else
+        echo "Daily Draw: $reading"
+    end
 end
