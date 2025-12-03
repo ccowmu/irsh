@@ -1,30 +1,38 @@
 #!/usr/bin/fish
 
-# get input either from arguments or stdin
+# If we have arguments, behave like the lower script: print them and pipe onward.
+# Otherwise, just read stdin.
 if set -q argv[1]
-    set text "$argv"
+    printf "%s" "$argv"
 else
-    set text (cat)
-end
+    cat
+end | begin
+    # Slurp everything into a single string, preserving newlines (including trailing)
+    set text (string collect -N)
 
-# lowercase everything first
-set text (string lower -- $text)
+    set out ""
+    set count 1
 
-set out ""
-set count 1
+    # Walk character by character
+    for char in (string split '' -- $text)
+        # Work from a lowercase version of the character
+        set lower (string lower -- $char)
 
-# sets all even characters to upper
-for char in (string split '' -- $text)
-    if string match -qr '[a-z]' $char
-        if test (math "$count % 2") -eq 0
-            set out "$out"(string upper -- $char)
+        # Only letters participate in the alternating pattern
+        if string match -rq '[a-z]' -- $lower
+            if test (math "$count % 2") -eq 0
+                # even: upper
+                set out "$out"(string upper -- $lower)
+            else
+                # odd: lower
+                set out "$out$lower"
+            end
+            set count (math "$count + 1")
         else
+            # Non-letters are passed through unchanged and don't affect the count
             set out "$out$char"
         end
-        set count (math "$count + 1")
-    else
-        set out "$out$char"
     end
-end
 
-printf "%s" "$out"
+    printf "%s" "$out"
+end
