@@ -1,8 +1,8 @@
 FROM python:3.11-alpine
 
-RUN apk add --update fish perl figlet fortune jq tzdata curl binutils coreutils \
+RUN apk add --update fish perl figlet fortune jq tzdata curl binutils coreutils grep \
     && apk add --update --virtual build-deps gcc libc-dev \
-    && pip3 install --no-cache-dir matrix_nio bs4 markovify slackclient \
+    && pip3 install --no-cache-dir matrix_nio bs4 markovify slackclient requests \
     && apk del build-deps \
     && rm -rf /var/cache/apk/*
 
@@ -22,4 +22,4 @@ COPY cows/* /usr/local/share/cows/
 RUN ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime
 
 WORKDIR /irsh
-CMD /irsh/init
+CMD ["/irsh/init"]
