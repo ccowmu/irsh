@@ -1,0 +1,30 @@
+#!/usr/bin/fish
+
+# get input either from arguments or stdin
+if set -q argv[1]
+    set text "$argv"
+else
+    set text (cat)
+end
+
+# lowercase everything first
+set text (string lower -- $text)
+
+set out ""
+set count 1
+
+# sets all even characters to upper
+for char in (string split '' -- $text)
+    if string match -qr '[a-z]' $char
+        if test (math "$count % 2") -eq 0
+            set out "$out"(string upper -- $char)
+        else
+            set out "$out$char"
+        end
+        set count (math "$count + 1")
+    else
+        set out "$out$char"
+    end
+end
+
+printf "%s" "$out"
