@@ -1,0 +1,117 @@
+#!/usr/bin/fish
+
+# TechCrunch Security News Fetcher
+set self (basename (status -f))
+set url "https://techcrunch.com/category/security/"
+
+# Parse arguments
+# -n/--num: number of stories (default 5)
+# -s/--sort: sort by 'recent' or 'older' (default recent)
+# -f/--format: output format 'brief' or 'detailed' (default brief)
+argparse -n$self \
+    'n/num=!_validate_int --min 1 --max 50' \
+    's/sort=' \
+    'f/format=' \
+    'h/help' \
+    -- $argv
+or begin
+    printf "%s: Invalid arguments\n" $self >&2
+    exit 1
+end
+
+# Show help
+if set -q _flag_help
+    printf "Usage: %s [OPTIONS]\n\n" $self
+    printf "Fetch security news stories from TechCrunch\n\n"
+    printf "Options:\n"
+    printf "  -n, --num NUMBER     Number of stories to fetch (1-50, default: 1)\n"
+    printf "  -s, --sort TYPE      Sort order: 'recent' or 'older' (default: recent)\n"
+    printf "  -f, --format TYPE    Output format: 'brief' or 'detailed' (default: brief)\n"
+    printf "  -h, --help           Show this help message\n\n"
+    printf "Example:\n"
+    printf "  %s -n 10 -s recent -f detailed\n" $self
+    exit 0
+end
+
+# Set defaults
+set num 1
+set sort_order recent
+set format brief
+
+# Apply user-provided flags
+if set -q _flag_num
+    set num $_flag_num
+end
+
+if set -q _flag_sort
+    if test $_flag_sort = recent -o $_flag_sort = older
+        set sort_order $_flag_sort
+    else
+        printf "%s: Invalid sort order '%s' (use 'recent' or 'older')\n" $self $_flag_sort >&2
+        exit 1
+    end
+end
+
+if set -q _flag_format
+    if test $_flag_format = brief -o $_flag_format = detailed
+        set format $_flag_format
+    else
+        printf "%s: Invalid format '%s' (use 'brief' or 'detailed')\n" $self $_flag_format >&2
+        exit 1
+    end
+end
+
+# Check for URL argument
+if test (count $argv) -ne 0
+    printf "%s: This script doesn't take URL arguments (it always fetches from TechCrunch Security)\n" $self >&2
+    printf "Use -h for help\n" >&2
+    exit 1
+end
+
+# Fetch and parse the webpage
+printf "Fetching %d %s security stories from TechCrunch...\n\n" $num $sort_order
+
+# Use curl to fetch the page
+set html (curl -s $url)
+
+if test $status -ne 0
+    printf "%s: Failed to fetch TechCrunch\n" $self >&2
+    exit 1
+end
+
+# Parse TechCrunch's article structure
+# TechCrunch uses <article> tags with class "post-block"
+set articles (echo $html | grep -oP '<article[^>]*class="[^"]*post-block[^"]*"[^>]*>.*?</article>' | head -n $num)
+
+if test -z "$articles"
+    printf "%s: No articles found. The site structure may have changed.\n" $self >&2
+    exit 1
+end
+
+printf "=== TechCrunch Security News ===\n\n"
+
+# Parse each article
+set count 0
+echo $articles | while read -d '</article>' article
+    set count (math $count + 1)
+    
+    # Extract title (look for h2 with class that contains "post-block__title")
+    set title (echo $article | grep -oP '<h2[^>]*class="[^"]*post-block__title[^"]*"[^>]*>.*?</h2>' | sed 's/<[^>]*>//g' | sed 's/&quot;/"/g' | sed 's/&#8217;/'\''/g')
+    
+    # Extract link
+    set link (echo $article | grep -oP 'href="https://techcrunch\.com/[^"]*"' | head -1 | sed 's/href="//;s/"//')
+    
+    # Extract excerpt/description
+    set excerpt (echo $article | grep -oP '<div[^>]*class="[^"]*post-block__content[^"]*"[^>]*>.*?</div>' | sed 's/<[^>]*>//g' | sed 's/&quot;/"/g' | head -c 200)
+    
+    if test $format = detailed
+        printf "[%d] %s\n" $count "$title"
+        printf "    Link: %s\n" "$link"
+        printf "    %s...\n\n" "$excerpt"
+    else
+        printf "[%d] %s\n" $count "$title"
+        printf "    %s\n\n" "$link"
+    end
+end
+
+printf "\nDone!\n"

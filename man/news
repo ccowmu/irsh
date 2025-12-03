@@ -1,0 +1,10 @@
+grabs a security news story and description from TechCrunch.
+
+Usage: %s [OPTIONS]\n\n" $self
+Fetches security news stories from TechCrunch
+Options:
+-n, --num NUMBER     Number of stories to fetch (1-50, default: 1)
+-s, --sort TYPE      Sort order: 'recent' or 'older' (default: recent)
+-f, --format TYPE    Output format: 'brief' or 'detailed' (default: brief)
+-h, --help           Show this help message
+Example: -n 10 -s recent -f detailed
