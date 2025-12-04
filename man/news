@@ -1,0 +1,56 @@
+NEWS(1)                    IRSH Commands                    NEWS(1)
+
+NAME
+    news - fetch security news stories from TechCrunch with summaries
+
+SYNOPSIS
+    news [OPTIONS]
+
+DESCRIPTION
+    Fetches the latest security news stories from TechCrunch's security category,
+    displaying article titles, summaries extracted from the full articles, and links.
+
+OPTIONS
+    -n, --num NUMBER
+        Number of stories to fetch (1-50, default: 1)
+
+    -s, --sort TYPE
+        Sort order for articles: 'recent' or 'older' (default: recent)
+
+    -f, --format TYPE
+        Output format:
+            brief    - Shows ~100 character summary (default)
+            detailed - Shows ~400 character summary for more context
+
+    -h, --help
+        Show help message and exit
+
+EXAMPLES
+    Fetch the latest security story with brief summary:
+        $ news
+
+    Fetch 5 recent stories with detailed summaries:
+        $ news -n 5 -f detailed
+
+    Fetch 3 older stories with brief summaries:
+        $ news -n 3 -s older
+
+OUTPUT FORMAT
+    Brief format:
+        [#] Article Title
+            Summary text (truncated to ~100 chars)...
+            https://link.to/article
+
+    Detailed format:
+        [#] Article Title
+            Summary text (truncated to ~400 chars)...
+            https://link.to/article
+
+NOTES
+    - The command fetches each article individually to extract summaries
+    - Internet connection is required
+    - May take several seconds when fetching multiple articles
+    - Uses timeout of 5 seconds per article fetch
+
+SEE ALSO
+    weather(1), fortune(1)
