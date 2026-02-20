@@ -60,7 +60,7 @@ Use the following commands to build and run the bot:
 
 ```
 docker build -f Dockerfile . -t irsh
-docker run -it -v .:/irsh --name irsh irsh
+docker run -it -v "$PWD":/irsh --name irsh irsh
 ```
 
 
