@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_dir"
+
+docker compose -f compose.dev.yml down
+
+if [[ -d .dev ]]; then
+  docker run --rm -v "$repo_dir/.dev:/state" alpine:3.22 \
+    sh -c 'rm -rf /state/synapse'
+fi
+
+rm -f etc/irsh.ini
+printf 'Local Matrix state and generated bot configuration removed.\n'
+

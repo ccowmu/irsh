@@ -1,0 +1,34 @@
+services:
+  synapse:
+    image: matrixdotorg/synapse:latest
+    container_name: irsh-dev-synapse
+    restart: unless-stopped
+    environment:
+      SYNAPSE_CONFIG_PATH: /data/homeserver.yaml
+    ports:
+      - "127.0.0.1:18018:8008"
+    volumes:
+      - ./.dev/synapse:/data
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --silent
+        - http://localhost:8008/_matrix/client/versions
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  irsh:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: irsh-dev-bot
+    restart: unless-stopped
+    depends_on:
+      synapse:
+        condition: service_healthy
+    volumes:
+      - ./:/irsh
+

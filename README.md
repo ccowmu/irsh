@@ -63,6 +63,35 @@ docker build -f Dockerfile . -t irsh
 docker run -it -v "$PWD":/irsh --name irsh irsh
 ```
 
+Local development
+-----------------
+
+The development Compose stack runs an isolated Synapse homeserver and irsh.
+Docker, Docker Compose, `curl`, and `jq` are required on the host.
+
+```
+./dev/up
+./dev/smoke-test
+```
+
+Synapse is exposed only on `127.0.0.1:18018`. The setup creates two local-only
+accounts:
+
+* `@irsh:localhost` / `irsh-dev-password`
+* `@tester:localhost` / `tester-dev-password`
+
+Source files are bind-mounted into the bot container. Restart the bot after
+editing Python code:
+
+```
+docker compose -f compose.dev.yml restart irsh
+```
+
+Use `./dev/shell` for an interactive fish shell with all runtime dependencies,
+`./dev/down` to stop the stack, and `./dev/reset` to stop it and remove all
+generated Matrix state. Runtime state lives under `.dev/`; generated bot
+configuration lives under `etc/`. Both are ignored by Git.
+
 
 Overview
 --------

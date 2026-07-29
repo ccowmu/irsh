@@ -3,4 +3,5 @@ __pycache__/
 *$py.class
 var/
 etc/
+.dev/
 *.swp

@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$repo_dir"
+
+mkdir -p .dev/synapse etc
+
+if [[ ! -f .dev/synapse/homeserver.yaml ]]; then
+  docker compose -f compose.dev.yml run --rm \
+    -e SYNAPSE_SERVER_NAME=localhost \
+    -e SYNAPSE_REPORT_STATS=no \
+    synapse generate
+fi
+
+if ! grep -q '^registration_shared_secret:' .dev/synapse/homeserver.yaml; then
+  printf '\nregistration_shared_secret: "irsh-local-dev-registration"\n' \
+    >> .dev/synapse/homeserver.yaml
+fi
+
+docker compose -f compose.dev.yml up -d synapse
+
+printf 'Waiting for Synapse'
+for _ in $(seq 1 60); do
+  if curl --fail --silent \
+    http://127.0.0.1:18018/_matrix/client/versions >/dev/null; then
+    printf ' ready\n'
+    break
+  fi
+  printf '.'
+  sleep 1
+done
+
+if ! curl --fail --silent \
+  http://127.0.0.1:18018/_matrix/client/versions >/dev/null; then
+  printf '\nSynapse did not become ready.\n' >&2
+  exit 1
+fi
+
+register_user() {
+  local username="$1"
+  local password="$2"
+  docker compose -f compose.dev.yml exec -T synapse \
+    register_new_matrix_user \
+    -c /data/homeserver.yaml \
+    http://localhost:8008 \
+    -u "$username" \
+    -p "$password" \
+    --no-admin >/dev/null 2>&1 || true
+}
+
+register_user irsh irsh-dev-password
+register_user tester tester-dev-password
+
+cat > etc/irsh.ini <<'EOF'
+[irsh]
+leader = $
+maxpipes = 5
+timeout = 5
+kind = matrix
+url = http://synapse:8008
+username = @irsh:localhost
+password = irsh-dev-password
+EOF
+
+docker compose -f compose.dev.yml up -d --build irsh
+printf 'Development stack is running.\n'
+printf 'Synapse: http://127.0.0.1:18018\n'
+printf 'Run ./dev/smoke-test to verify the bot.\n'
+
