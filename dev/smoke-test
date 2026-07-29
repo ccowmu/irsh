@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+base_url="${IRSH_MATRIX_URL:-http://127.0.0.1:18018}"
+
+login_response="$(
+  curl --fail --silent --show-error \
+    -H 'Content-Type: application/json' \
+    -d '{
+      "type": "m.login.password",
+      "identifier": {"type": "m.id.user", "user": "tester"},
+      "password": "tester-dev-password"
+    }' \
+    "$base_url/_matrix/client/v3/login"
+)"
+access_token="$(jq -r .access_token <<<"$login_response")"
+
+room_response="$(
+  curl --fail --silent --show-error \
+    -H "Authorization: Bearer $access_token" \
+    -H 'Content-Type: application/json' \
+    -d '{"name":"irsh smoke test","invite":["@irsh:localhost"]}' \
+    "$base_url/_matrix/client/v3/createRoom"
+)"
+room_id="$(jq -r .room_id <<<"$room_response")"
+
+printf 'Waiting for the bot to join %s' "$room_id"
+for _ in $(seq 1 30); do
+  joined="$(
+    curl --fail --silent --show-error \
+      -H "Authorization: Bearer $access_token" \
+      "$base_url/_matrix/client/v3/rooms/$room_id/joined_members"
+  )"
+  if jq -e '.joined["@irsh:localhost"]' >/dev/null <<<"$joined"; then
+    printf ' joined\n'
+    break
+  fi
+  printf '.'
+  sleep 1
+done
+
+if ! jq -e '.joined["@irsh:localhost"]' >/dev/null <<<"$joined"; then
+  printf '\nBot did not join the smoke-test room.\n' >&2
+  exit 1
+fi
+
+txn_id="smoke-$(date +%s%N)"
+curl --fail --silent --show-error \
+  -X PUT \
+  -H "Authorization: Bearer $access_token" \
+  -H 'Content-Type: application/json' \
+  -d '{"msgtype":"m.text","body":"$echo hello matrix | upper"}' \
+  "$base_url/_matrix/client/v3/rooms/$room_id/send/m.room.message/$txn_id" \
+  >/dev/null
+
+printf 'Waiting for command response'
+for _ in $(seq 1 30); do
+  messages="$(
+    curl --fail --silent --show-error \
+      -H "Authorization: Bearer $access_token" \
+      "$base_url/_matrix/client/v3/rooms/$room_id/messages?dir=b&limit=20"
+  )"
+  response="$(
+    jq -r '
+      [.chunk[]
+       | select(.sender == "@irsh:localhost")
+       | select(.type == "m.room.message")
+       | .content.body][0] // empty
+    ' <<<"$messages"
+  )"
+  if [[ "$response" == "HELLO MATRIX" ]]; then
+    printf ' received\n'
+    printf 'PASS: $echo hello matrix | upper -> %s\n' "$response"
+    exit 0
+  fi
+  printf '.'
+  sleep 1
+done
+
+printf '\nExpected HELLO MATRIX, got: %s\n' "${response:-<no response>}" >&2
+exit 1
+
