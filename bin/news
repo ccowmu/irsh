@@ -82,36 +82,32 @@ def fetch_techcrunch_security_news(num=1, sort_order='recent', format_type='brie
     
     soup = BeautifulSoup(response.content, 'html.parser')
     
-    # Find articles - look for article containers
+    # Find articles - look for recent article links from the security category
+    # We look for links with the date pattern (techcrunch.com/YYYY/MM/DD/...)
     articles = []
+    seen_urls = set()
     
-    # Try to find article containers
-    for article_elem in soup.find_all(['article', 'div'], class_=lambda x: x and any(k in x.lower() for k in ['post', 'article', 'story'])):
-        # Find the main link (usually the title)
-        link_elem = article_elem.find('a', href=True)
-        if not link_elem:
+    for link in soup.find_all('a', href=True):
+        href = link['href']
+        
+        # Skip if we've already seen this URL
+        if href in seen_urls:
             continue
         
-        href = link_elem['href']
-        
-        # Filter out non-article links
-        if any(x in href for x in ['#', '?', 'tag/', 'author/', 'page/', 'category']):
-            continue
-        if 'techcrunch.com' not in href:
-            continue
-        
-        title = link_elem.get_text(strip=True)
-        if not title or len(title) < 5:
-            continue
-        
-        articles.append({
-            'title': title,
-            'link': href,
-            'summary': None  # Will fetch later
-        })
-        
-        if len(articles) >= num:
-            break
+        # Look for article URLs with date pattern (techcrunch.com/202X/MM/DD/...)
+        if 'techcrunch.com/202' in href and 'category' not in href and 'tag' not in href and 'author' not in href:
+            # Verify it's a full article (has enough path segments)
+            if href.count('/') > 4:
+                title = link.get_text(strip=True)
+                if title and len(title) > 10:
+                    articles.append({
+                        'title': title,
+                        'link': href,
+                        'summary': None  # Will fetch later
+                    })
+                    seen_urls.add(href)
+                    if len(articles) >= num:
+                        break
     
     if not articles:
         print("news: No articles found. The site structure may have changed.", file=sys.stderr)
